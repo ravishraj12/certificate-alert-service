@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Don't forget to set system property
+-DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector
+     to make all loggers asynchronous. -->
+<Configuration status="DEBUG" monitorInterval="300">
+    <Properties>
+        <Property name="node.id">dummy-node</Property>
+    </Properties>
+    <Appenders>
+        <!-- Async Loggers will auto-flush in batches, so switch off immediateFlush. -->
+        <RollingRandomAccessFile name="API_FILE_LOG" fileName="logs/${sys:node.id}.log"
+                                 filePattern="logs/${sys:node.id}-%d{yyyyMMdd-HHmm}-%i.log.gz"
+                                 immediateFlush="false" append="true" >
+            <PatternLayout>
+                <Pattern>%d %p{ERROR=ERROR, length=2} %c{1.} [%t] %m %ex%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy interval="40" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="150"/>
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="API_ACCESS_LOG" fileName="logs/${sys:node.id}-access.log"
+                                 filePattern="logs/${sys:node.id}-access-%d{yyyyMMdd-HH}.log"
+                                 immediateFlush="false" append="true" >
+            <PatternLayout>
+                <Pattern>%d [%t] %m %n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="API_KAFKA_LOG" fileName="logs/${sys:node.id}-kafka.log"
+                                 filePattern="logs/${sys:node.id}-access-%d{yyyyMMdd-HH}.log"
+                                 immediateFlush="false" append="true" >
+            <PatternLayout>
+                <Pattern>%d [%t] %m %n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+        </RollingRandomAccessFile>
+        <!--Console name="Console" target="SYSTEM_OUT"><PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] [%X{requestId}] %p{ERROR=ERROR, length=2} %c{1.} %m %ex%n"/></Console-->
+    </Appenders>
+    <Loggers>
+        <Root level="DEBUG" includeLocation="false">
+            <!--<AppenderRef ref="Console"/>-->
+            <AppenderRef ref="API_FILE_LOG"/>
+        </Root>
+        <logger name="log4jdbc" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="jdbc.audit" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="jdbc.resultset" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="jdbc.resultsettable" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="jdbc.sqlonly" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="jdbc.sqltiming" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="com.enstage" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="com.wibmo" level="DEBUG" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="com.zaxxer" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="io.lettuce" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="MySQL" level="INFO" additivity="false">
+            <AppenderRef ref="API_FILE_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+        <logger name="org.apache.kafka" level="INFO" additivity="false">
+            <AppenderRef ref="API_KAFKA_LOG"/>
+            <!--<AppenderRef ref="Console"/>-->
+        </logger>
+         <logger name="io.vertx.jdbcclient" level="WARN" additivity="false">
+         	<AppenderRef ref="API_FILE_LOG"/><!--<AppenderRef ref="Console"/>-->
+         </logger>
+         <logger name="io.vertx.ext.jdbc" level="WARN" additivity="false">
+         	<AppenderRef ref="API_FILE_LOG"/><!--<AppenderRef ref="Console"/>-->
+         </logger>
+        <logger name="com.wibmo.accosa2.vertx.AccosaLogHandler" level="INFO" additivity="false">
+            <AppenderRef ref="API_ACCESS_LOG"/>
+        </logger>
+    </Loggers>
+</Configuration>

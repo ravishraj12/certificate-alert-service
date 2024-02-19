@@ -1,0 +1,33 @@
+{
+	"cronPattern1": "0 45 9 * * ?",
+	"cronPattern2": "0 0 * ? * * *",
+	"hsmConfig": {
+		"hsmUrlEP": {
+			"hsm.endpointURL": "http://192.168.105.109:9555",
+			"hsm.encKeyAlias": "cmnhsm_s2_enc_256_aes_raw",
+			"hsm.transformationMode": "09",
+			"hsm.providerType": "HK_AC",
+			"hsm.keyType": "AES256",
+			"hsm.algorthmId": "HMACSHA256"
+		},
+		"dataEncKey": {
+			"keyType": "AES256",
+			"providerType": "HK_AC",
+			"keyAlias": "devbk_s3_enc_256_aes_raw",
+			"encMode": "09"
+		}
+	},
+	"groupName": [
+		"crt",
+		"pilot",
+		"dcs",
+		"dc2",
+		"acs2dev2"
+	],
+	"resourceType": [
+		"CERT",
+		"ALERT-EMAIL",
+		"ALERT-SMS",
+		"EPURL"
+	]
+}

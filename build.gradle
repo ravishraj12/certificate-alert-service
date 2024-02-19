@@ -1,0 +1,244 @@
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'application'
+apply plugin: 'maven-publish'
+
+if ( project == rootProject ) {
+    apply plugin: 'org.sonarqube'
+}
+
+//Plugins
+apply plugin: 'com.jonaslasauskas.capsule'
+apply plugin: 'com.github.ben-manes.versions'
+
+
+//Wibmo plugins
+apply plugin: 'com.wibmo.gradle.wibmo-elastic-dependencies-plugin'
+apply plugin: 'com.wibmo.gradle.build-version-plugin'
+
+//Apply lombok
+apply plugin: "io.franzbecker.gradle-lombok"
+
+buildscript {
+    ext {
+        enterpriseRepo = "http://archiva.wibmo.com:8080/repository/enterprise"
+    }
+    repositories {
+        //jcenter()
+        maven {
+            url enterpriseRepo
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.jonaslasauskas.capsule:gradle-capsule-plugin:0.3.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.20.0"
+        classpath 'com.wibmo.gradle:wibmo-code-quality-plugin:0.6.0'
+        classpath 'com.wibmo.gradle:build-version-plugin:2.0.0'
+        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2"
+        classpath "io.franzbecker:gradle-lombok:4.0.0"
+
+    }
+}
+
+ext {
+    enterpriseRepo = "http://archiva.wibmo.com:8080/repository/enterprise"
+    snapshotsRepo = "http://archiva.wibmo.com:8080/repository/snapshots"
+
+    uname = project.hasProperty('publishUserName')?project.property('publishUserName'):'guest'
+    ukey = project.hasProperty('publishUserKey')?project.property('publishUserKey'):''
+
+    //Common set of libs for the project
+    libraries = [
+            logging : [ 'org.slf4j:slf4j-api:1.7.25',
+                        'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0',
+                        'org.apache.logging.log4j:log4j-core:2.19.0',
+                        'org.apache.logging.log4j:log4j-api:2.19.0',
+                        'com.lmax:disruptor:3.4.2' ],
+    ]
+}
+
+group = 'com.wibmo.accosa2'
+
+
+mainClassName = 'com.wibmo.accosa2.vertx.Launcher'
+
+//Main script follows
+repositories {
+    //jcenter()
+  maven {
+        url enterpriseRepo
+        content {
+           releasesOnly()
+        }
+    }
+    maven {
+        url snapshotsRepo
+        content{
+           snapshotsOnly()
+        }
+    }
+}
+
+//Application configuration
+def mainVerticleName = 'com.wibmo.accosa2.service.CertificateAlertService'
+def watchForChange = 'src/**/*'
+def doOnChange = 'gradle classes'
+
+dependencies {
+    
+    compile libraries.logging
+	compile elastic('accosa2-logging', "$commonVersion")
+    compile elastic('accosa2-vertx-bootstrap', "$commonVersion")
+    compile elastic('accosa2-async-httpclient', "$commonVersion")
+    compile elastic('acs2-cache',"$commonVersion")
+    compile elastic('3ds-entity', "$commonVersion")
+  	compile elastic('acs2-entity', "$commonVersion")
+    compile "io.vertx:vertx-core:$vertxVersion"
+    compile "io.vertx:vertx-web:$vertxVersion"
+    compile "io.vertx:vertx-config:$vertxVersion"
+    compile ("io.vertx:vertx-kafka-client:$vertxVersion"){
+        exclude group:'org.slf4j', module:'slf4j-log4j12'
+        exclude group:'log4j', module:'log4j'
+    }
+    compile group: 'io.vertx', name: 'vertx-ext', version: '34', ext: 'pom'
+    compile "io.vertx:vertx-web-client:$vertxVersion"
+    
+    compile 'io.vertx:vertx-web:$vertxVersion'
+	compile 'io.lettuce:lettuce-core:6.2.0.RELEASE'
+    
+    compile "org.joda:joda-convert:2.1"
+	compile "joda-time:joda-time:2.10"
+	compile "org.javassist:javassist:3.23.0-GA"
+	
+	compile "com.diabolicallabs:vertx-cron:3.2.1.1"
+	
+	compile 'javax.mail:mail:1.5.0-b01'
+	compile 'io.vertx:vertx-config:$vertxVersion'
+	compile 'io.vertx:vertx-web-client:$vertxVersion'
+	compile "io.vertx:vertx-mail-client:3.8.7"
+	compile "io.vertx:vertx-circuit-breaker:$vertxVersion"
+	compile 'com.wibmo.accosa2:accosa2-async-httpclient:2.59.0'
+
+    testCompile 'junit:junit:4.12'
+    testCompile "io.vertx:vertx-unit:$vertxVersion"
+
+    //code coverage
+    testCompile("io.vertx:vertx-junit5:$vertxVersion")
+    testCompile("org.assertj:assertj-core:3.10.0")
+    testRuntime("org.junit.platform:junit-platform-runner:1.5.2")
+    testCompile 'org.junit.platform:junit-platform-launcher:1.4.0'
+    testCompile 'org.junit.jupiter:junit-jupiter:5.6.2'
+    testCompile group: 'org.junit.platform', name: 'junit-platform-commons', version: '1.7.1'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '4.0.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.8.0'
+
+}
+
+run {
+    args = ['run',
+            mainVerticleName,
+            "--redeploy=$watchForChange",
+            "--launcher-class=$mainVerticleName",
+            "--on-redeploy=$doOnChange",
+            "-Dlog4j.configurationFile=file:./config/log4j2.xml",
+            "-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory",
+            "-DapplicationPort=9380",
+            "-server",
+            "-Xms512M",
+            "-Xmx8G",
+            "-XX:MaxMetaspaceSize=512M",
+            "-Dsun.net.inetaddr.ttl=180"
+    ]
+}
+
+/*jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled true
+
+    }
+}*/
+
+test {
+    useJUnitPlatform()
+    //finalizedBy jacocoTestReport
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+
+    reports {
+        html.enabled = true
+    }
+    environment 'WIBMO_REGION', 'indblr'
+    environment "WIBMO_ZONE", "blrrel"
+}
+
+// Packaging and publishing
+manifest {
+    attributes(
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-JDK': System.getProperty('java.version'),
+        'Source-Compatibility': project.sourceCompatibility,
+        'Target-Compatibility': project.targetCompatibility
+    )
+}
+
+distributions {
+    app {
+        baseName = project.name
+        contents {
+            from ('config') {
+                include '*/**'
+                into ('config')
+            }
+            from (capsule)
+        }
+    }
+}
+
+capsule {
+    baseName = 'acs2-certificate-alert-service'
+    capsuleManifest {
+        applicationId = "acs2-certificate-alert-service.$version"
+        applicationClass = mainVerticleName
+        jvmArgs = [
+            "-DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector",
+            "-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory",
+            "-server"
+        ]
+        args = ['run',mainVerticleName]
+        minJavaVersion = sourceCompatibility
+    }
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 300, 'seconds'
+}
+
+publishing {
+    repositories {
+        maven {
+            credentials {
+                username uname
+                password ukey
+            }
+            url = "$version".endsWith('SNAPSHOT') ? snapshotsRepo : enterpriseRepo
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+
+idea {
+    module {
+        scopes.TEST.plus += [ configurations.testCompile ]
+    }
+}
